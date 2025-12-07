@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import ParticlesBg from '@/components/animations/ParticlesBg';
 import AnimatedButton from '@/components/animations/AnimatedButton';
-import { supabase } from '@/supabaseClient';
+import { supabase } from '@/services/supabaseClient';
 
 export const SignUp = () => {
   const navigate = useNavigate();

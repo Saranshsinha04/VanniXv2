@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import ParticlesBg from '@/components/animations/ParticlesBg';
 import AnimatedButton from '@/components/animations/AnimatedButton';
 import ProfileCard from '@/components/common/ProfileCard';
-import { supabase } from '@/supabaseClient';
+import { supabase } from '@/services/supabaseClient';
 
 export const SignIn = () => {
   const navigate = useNavigate();

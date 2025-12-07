@@ -7,7 +7,7 @@ import SignUp from '@/pages/SignUp';
 import Dashboard from '@/pages/Dashboard';
 import './index.css';
 
-import { supabase } from './supabaseClient'
+import { supabase } from '@/services/supabaseClient'
 
 export function TestApp() {
   
