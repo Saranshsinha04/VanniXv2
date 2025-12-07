@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from "react";
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Home from '@/pages/Home';
 import Game from '@/pages/Game';
@@ -6,6 +6,24 @@ import SignIn from '@/pages/SignIn';
 import SignUp from '@/pages/SignUp';
 import Dashboard from '@/pages/Dashboard';
 import './index.css';
+
+import { supabase } from './supabaseClient'
+
+export function TestApp() {
+  
+
+  
+  useEffect(() => {
+  async function test() {
+    await supabase.from("test_table").insert([{ message: "Test message" }]);
+
+    const { data, error } = await supabase.from("test_table").select("*");
+    console.log("Data after insert:", data);
+  }
+  test();
+}, []);
+}
+
 
 export const App = () => {
   return (
