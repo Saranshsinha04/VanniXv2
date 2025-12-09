@@ -1,28 +1,48 @@
-import React, { createContext, useState, useCallback } from 'react';
+import React, { createContext, useState, useCallback } from "react";
+
+// ✅ Import Supabase client
+import { supabase } from "@/services/supabaseClient";
+
+// ✅ Import Room Code Generator
+import { generateRoomCode } from "@/lib/roomCode";
+
+// (Optional Future Imports)
+// import { audioService } from "@/services/audioService";
+// import { gameService } from "@/services/gameService";
+// import { calculateScore } from "@/lib/scoreCalculation";
+// import { distributeTokens } from "@/lib/tokenDistribution";
 
 export const GameContext = createContext();
 
 export const GameProvider = ({ children }) => {
-  // Room State
+  // =========================
+  // ROOM STATE
+  // =========================
   const [room, setRoom] = useState({
     id: null,
     code: null,
     hostId: null,
     maxPlayers: 4,
-    status: 'lobby', // 'lobby' | 'playing' | 'results' | 'finished'
+    status: "lobby", // lobby | playing | results | finished
   });
 
-  // Players State
+  // =========================
+  // PLAYERS STATE
+  // =========================
   const [players, setPlayers] = useState([]);
 
-  // Round State
+  // =========================
+  // ROUND STATE
+  // =========================
   const [round, setRound] = useState({
     number: 1,
-    status: 'waiting', // 'waiting' | 'recording' | 'submitted' | 'processing' | 'complete'
+    status: "waiting", // waiting | recording | submitted | processing | complete
     scores: {},
   });
 
-  // Audio State
+  // =========================
+  // AUDIO STATE
+  // =========================
   const [audio, setAudio] = useState({
     isRecording: false,
     duration: 0,
@@ -30,67 +50,112 @@ export const GameProvider = ({ children }) => {
     isUploading: false,
   });
 
-  // Actions
+  // =========================
+  // ACTIONS
+  // =========================
+
+  // CREATE ROOM (HOST)
   const createRoom = useCallback(async (hostId, maxPlayers) => {
     const roomCode = generateRoomCode();
+
     const { data, error } = await supabase
-      .from('rooms')
-      .insert([{ code: roomCode, host_id: hostId, max_players: maxPlayers }])
+      .from("rooms")
+      .insert([
+        { code: roomCode, host_id: hostId, max_players: maxPlayers },
+      ])
       .select()
       .single();
 
     if (!error) {
-      setRoom({ id: data.id, code: data.code, hostId, maxPlayers, status: 'lobby' });
+      setRoom({
+        id: data.id,
+        code: data.code,
+        hostId,
+        maxPlayers,
+        status: "lobby",
+      });
     }
+
     return { roomId: data?.id, roomCode, error };
   }, []);
 
-  const joinRoom = useCallback(async (roomCode, userId, username, avatar) => {
-    const { data: roomData, error: roomError } = await supabase
-      .from('rooms')
-      .select('*')
-      .eq('code', roomCode)
-      .single();
+  // JOIN ROOM (PLAYER)
+  const joinRoom = useCallback(
+    async (roomCode, userId, username, avatar) => {
+      const { data: roomData, error: roomError } = await supabase
+        .from("rooms")
+        .select("*")
+        .eq("code", roomCode)
+        .single();
 
-    if (roomError) return { error: 'Room not found' };
+      if (roomError) return { error: "Room not found" };
 
-    const { data: playerData, error: joinError } = await supabase
-      .from('room_players')
-      .insert([{ room_id: roomData.id, user_id: userId, username, avatar }])
-      .select()
-      .single();
+      const { data: playerData, error: joinError } = await supabase
+        .from("room_players")
+        .insert([
+          {
+            room_id: roomData.id,
+            user_id: userId,
+            username,
+            avatar,
+            tokens: 10,
+          },
+        ])
+        .select()
+        .single();
 
-    if (!joinError) {
-      setRoom(roomData);
-    }
-    return { roomId: roomData.id, error: joinError };
-  }, []);
+      if (!joinError) setRoom(roomData);
 
+      return { roomId: roomData.id, error: joinError };
+    },
+    []
+  );
+
+  // ADD PLAYER LOCALLY
   const addPlayer = useCallback((player) => {
-    setPlayers(prev => [...prev, player]);
+    setPlayers((prev) => [...prev, player]);
   }, []);
 
+  // UPDATE TOKENS LOCALLY
   const updatePlayerTokens = useCallback((playerId, newTokens) => {
-    setPlayers(prev =>
-      prev.map(p => p.id === playerId ? { ...p, tokens: newTokens } : p)
+    setPlayers((prev) =>
+      prev.map((p) =>
+        p.id === playerId ? { ...p, tokens: newTokens } : p
+      )
     );
   }, []);
 
-  const startRound = useCallback(async () => {
-    setRound(prev => ({ ...prev, status: 'recording' }));
+  // START ROUND
+  const startRound = useCallback(() => {
+    setRound((prev) => ({ ...prev, status: "recording" }));
   }, []);
 
+  // SUBMIT AUDIO
   const submitAudio = useCallback(async (audioBlob, roundNumber) => {
-    setAudio(prev => ({ ...prev, isUploading: true }));
-    // Upload logic
-    setAudio(prev => ({ ...prev, isUploading: false, audioBlob }));
+    setAudio((prev) => ({ ...prev, isUploading: true }));
+
+    // TODO: replace with:
+    // const { url } = await audioService.uploadAudio(room.id, userId, audioBlob);
+    // const score = await calculateScore(url);
+    // await gameService.updateScore(userId, score);
+
+    setAudio((prev) => ({
+      ...prev,
+      isUploading: false,
+      audioBlob,
+    }));
   }, []);
 
+  // ADVANCE ROUND (3 ROUNDS ONLY)
   const advanceRound = useCallback(() => {
     if (round.number < 3) {
-      setRound(prev => ({ ...prev, number: prev.number + 1, status: 'waiting' }));
+      setRound((prev) => ({
+        ...prev,
+        number: prev.number + 1,
+        status: "waiting",
+      }));
     } else {
-      setRoom(prev => ({ ...prev, status: 'finished' }));
+      setRoom((prev) => ({ ...prev, status: "finished" }));
     }
   }, [round.number]);
 
@@ -114,12 +179,3 @@ export const GameProvider = ({ children }) => {
     </GameContext.Provider>
   );
 };
-
-function generateRoomCode(length = 6) {
-  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-  let code = '';
-  for (let i = 0; i < length; i++) {
-    code += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
-  return code;
-}

@@ -5,7 +5,7 @@ import { useNavigate } from 'react-router-dom';
 // 6. ROUND RESULTS SCREEN
 // ============================================================================
 
-export const RoundResultsScreen = ({ roomCode, roundNumber, score, tokensWon, userId }) => {
+export const RoundResults = ({ roomCode, roundNumber, score, tokensWon, userId }) => {
   const navigate = useNavigate();
   const [leaderboard, setLeaderboard] = useState([
     { rank: 1, username: 'Alice', tokens: 15, score: 92 },
@@ -122,4 +122,4 @@ export const RoundResultsScreen = ({ roomCode, roundNumber, score, tokensWon, us
     </div>
   );
 };
-export default RoundResultsScreen;
+export default RoundResults;
